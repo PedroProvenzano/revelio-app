@@ -17,11 +17,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnDelete = document.getElementById('btn-delete');
 
   let currentView = 'front';
-  
+
   // 2. Inicialización de Fabric.js
   const canvasElement = document.getElementById('design-canvas');
   const canvasWrapper = document.querySelector('.canvas-container-mask');
-  
+
   // Set canvas dimension based on mask bounds
   const rect = canvasWrapper.getBoundingClientRect();
   const canvas = new fabric.Canvas('design-canvas', {
@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Handle Resize
   window.addEventListener('resize', () => {
     const newRect = canvasWrapper.getBoundingClientRect();
-    if(newRect.width > 0 && newRect.height > 0) {
+    if (newRect.width > 0 && newRect.height > 0) {
       canvas.setDimensions({ width: newRect.width, height: newRect.height });
       canvas.renderAll();
     }
@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function showObjectControls() {
     objectControls.style.display = 'flex';
   }
-  
+
   function hideObjectControls() {
     objectControls.style.display = 'none';
   }
@@ -116,7 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const img = await fabric.FabricImage.fromURL(imgUrl, { crossOrigin: 'anonymous' });
       // Scale down if image is bigger than canvas
       const scale = Math.min((canvas.width * 0.8) / (img.width || 1), (canvas.height * 0.8) / (img.height || 1), 1);
-      
+
       img.set({
         left: canvas.width / 2,
         top: canvas.height / 2,
@@ -129,10 +129,10 @@ document.addEventListener('DOMContentLoaded', () => {
         borderColor: '#6c5ce7',
         transparentCorners: false
       });
-      
+
       canvas.add(img);
       canvas.setActiveObject(img);
-    } catch(err) {
+    } catch (err) {
       console.error(err);
     }
   }
@@ -159,19 +159,19 @@ document.addEventListener('DOMContentLoaded', () => {
   dummyPresets.forEach(svgStr => {
     const b64 = btoa(svgStr);
     const dataUrl = `data:image/svg+xml;base64,${b64}`;
-    
+
     // Create DOM element for gallery
     const imgWrapper = document.createElement('div');
     imgWrapper.className = 'preset-img-wrapper';
     const img = document.createElement('img');
     img.src = dataUrl;
     imgWrapper.appendChild(img);
-    
+
     // Click event to add
     imgWrapper.addEventListener('click', () => {
       addImageToCanvas(dataUrl);
     });
-    
+
     presetGallery.appendChild(imgWrapper);
   });
 
@@ -189,7 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
       await new Promise(r => setTimeout(r, 100));
 
       const wrapper = document.getElementById('canvas-wrapper');
-      
+
       // Removemos la mascara punteada para la captura
       canvasWrapper.style.border = 'none';
 
@@ -202,12 +202,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Restauramos borde
       canvasWrapper.style.border = '1px dashed rgba(255,255,255,0.2)';
-      
+
       const talle = sizeSelect.value;
       const color = window.getComputedStyle(tshirtColor).backgroundColor;
       const msg = `¡Hola! Quiero hacer un pedido en Revelio.%0A%0A*Detalles de la remera:*%0A- Talle: ${talle}%0A- Vista: ${currentView}%0A%0ATe adjunto la imagen de mi diseño.`;
-      const phoneNumber = "YOUR_PHONE_NUMBER_HERE"; // Sustituir por el número
-      
+      const phoneNumber = "5491178288321"; // Sustituir por el número
+
       // Descargamos la imagen renderizada
       const link = document.createElement('a');
       link.download = `revelio_diseno_${talle}.png`;
@@ -216,9 +216,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Abrimos WhatsApp
       setTimeout(() => {
-         window.location.href = `https://wa.me/${phoneNumber}?text=${msg}`;
+        window.location.href = `https://wa.me/${phoneNumber}?text=${msg}`;
       }, 300);
-      
+
     } catch (e) {
       console.error(e);
       alert('Hubo un error al generar la captura.');
