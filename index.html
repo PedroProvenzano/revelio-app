@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+    <title>Revelio - Crea tu Remera</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  </head>
+  <body>
+    <div class="app-container">
+      <!-- Barra lateral de Herramientas -->
+      <aside class="sidebar">
+        <div class="brand">
+          <i class="ph-fill ph-t-shirt"></i>
+          <h1>Revelio</h1>
+        </div>
+
+        <div class="tool-section">
+          <h3>2. Elige un Color</h3>
+          <div class="color-options" id="color-options">
+            <button class="color-btn active" data-color="#ffffff" style="background: #ffffff; border: 1px solid #ddd;"></button>
+            <button class="color-btn" data-color="#3c3c3c" style="background: #111111;"></button>
+            <button class="color-btn" data-color="#e74c3c" style="background: #e74c3c;"></button>
+            <button class="color-btn" data-color="#3498db" style="background: #3498db;"></button>
+            <button class="color-btn" data-color="#f1c40f" style="background: #f1c40f;"></button>
+            <button class="color-btn" data-color="#2ecc71" style="background: #2ecc71;"></button>
+            <button class="color-btn" data-color="#9b59b6" style="background: #9b59b6;"></button>
+          </div>
+        </div>
+
+        <div class="tool-section">
+          <h3>3. Agrega tu Diseño</h3>
+          <p class="tool-desc">Sube tu logo, dibujo o frase.</p>
+          <label class="upload-btn" for="image-upload">
+            <i class="ph ph-upload-simple"></i> Subir Imagen
+          </label>
+          <input type="file" id="image-upload" accept="image/png, image/jpeg, image/svg+xml" style="display: none;" />
+          
+          <div class="presets">
+            <p>O elige un diseño predefinido:</p>
+            <div class="preset-gallery" id="preset-gallery">
+              <!-- Se generarán dinámicamente -->
+            </div>
+          </div>
+        </div>
+
+        <div class="tool-section">
+          <h3>4. Ajusta los Detalles</h3>
+          <div class="details-form">
+            <label for="size-select">Talle de la Remera</label>
+            <select id="size-select">
+              <option value="S">Talle S</option>
+              <option value="M" selected>Talle M</option>
+              <option value="L">Talle L</option>
+              <option value="XL">Talle XL</option>
+              <option value="XXL">Talle XXL</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="tool-section fill-bottom">
+           <button class="checkout-btn" id="whatsapp-btn">
+             <i class="ph-fill ph-whatsapp-logo"></i>
+             Pedir por WhatsApp
+           </button>
+        </div>
+      </aside>
+
+      <!-- Área del Editor / Canvas -->
+      <main class="editor-area">
+        <!-- Floating controls for view angle -->
+        <div class="view-controls">
+          <div class="view-group">
+            <button class="view-btn active" data-view="front">Frente</button>
+            <button class="view-btn" data-view="back">Espalda</button>
+            <button class="view-btn" data-view="side">Costado</button>
+          </div>
+        </div>
+
+        <!-- Floating controls for canvas objects -->
+        <div class="object-controls" id="object-controls" style="display: none;">
+           <button id="btn-bring-front" title="Traer al frente"><i class="ph ph-stack"></i></button>
+           <button id="btn-delete" title="Eliminar"><i class="ph ph-trash"></i></button>
+        </div>
+        
+        <div class="canvas-wrapper" id="canvas-wrapper">
+           <div id="tshirt-color" class="tshirt-color mask-front"></div>
+           <div id="tshirt-base" class="tshirt-base bg-front"></div>
+           <div class="canvas-container-mask">
+              <canvas id="design-canvas"></canvas>
+           </div>
+        </div>
+      </main>
+    </div>
+    <script type="module" src="/main.js"></script>
+  </body>
+</html>
