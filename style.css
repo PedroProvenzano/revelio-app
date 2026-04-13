@@ -50,14 +50,20 @@ body {
   align-items: center;
   gap: 0.75rem;
   margin-bottom: 2rem;
-  color: var(--primary);
-  font-size: 1.5rem;
+}
+.brand-logo {
+  height: 48px;
+  width: 48px;
+  object-fit: cover;
+  border-radius: 50%;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
 }
 .brand h1 {
   font-weight: 800;
-  font-size: 1.75rem;
+  font-size: 1.5rem;
   letter-spacing: -0.5px;
   color: var(--text-main);
+  margin: 0;
 }
 
 .tool-section {
@@ -151,6 +157,29 @@ body {
   font-size: 0.85rem;
   color: var(--text-muted);
   margin-bottom: 0.75rem;
+}
+.preset-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.preset-filters input, .preset-filters select {
+  width: 100%;
+  padding: 0.6rem;
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-sm);
+  outline: none;
+  font-size: 0.85rem;
+  transition: border-color 0.2s;
+}
+.preset-filters input:focus, .preset-filters select:focus {
+  border-color: var(--primary);
+}
+.preset-filters input::placeholder {
+  color: var(--text-muted);
 }
 .preset-gallery {
   display: grid;

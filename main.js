@@ -12,11 +12,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const imageUpload = document.getElementById('image-upload');
   const whatsappBtn = document.getElementById('whatsapp-btn');
   const presetGallery = document.getElementById('preset-gallery');
+  const presetSearch = document.getElementById('preset-search');
+  const presetCategory = document.getElementById('preset-category');
   const objectControls = document.getElementById('object-controls');
   const btnBringFront = document.getElementById('btn-bring-front');
   const btnDelete = document.getElementById('btn-delete');
 
   let currentView = 'front';
+  let currentColorName = 'Blanco';
 
   // 2. Inicialización de Fabric.js
   const canvasElement = document.getElementById('design-canvas');
@@ -106,6 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.addEventListener('click', () => {
       colorBtns.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
+      currentColorName = btn.dataset.name;
       changeTshirtColor(btn.dataset.color);
     });
   });
@@ -127,7 +131,16 @@ document.addEventListener('DOMContentLoaded', () => {
         cornerColor: '#6c5ce7',
         cornerStyle: 'circle',
         borderColor: '#6c5ce7',
-        transparentCorners: false
+        transparentCorners: false,
+        lockUniScaling: true // Obliga a escalar proporcionalmente
+      });
+
+      // Ocultar manijas centrales (arriba, abajo, izquierda, derecha)
+      img.setControlsVisibility({
+        mt: false, 
+        mb: false, 
+        ml: false, 
+        mr: false
       });
 
       canvas.add(img);
@@ -149,82 +162,252 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Presets
-  const dummyPresets = [
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"><rect width="256" height="256" fill="none"/><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216ZM128,80a48,48,0,1,0,48,48A48.05,48.05,0,0,0,128,80Z" fill="#111"/></svg>',
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"><rect width="256" height="256" fill="none"/><path d="M224,128a96,96,0,1,1-96-96A96,96,0,0,1,224,128ZM128,48a80,80,0,1,0,80,80A80,80,0,0,0,128,48ZM92,116a12,12,0,1,0-12-12A12,12,0,0,0,92,116Zm72-24a12,12,0,1,0,12,12A12,12,0,0,0,164,92Zm-36,84a60.08,60.08,0,0,0,40.48-15.65,8,8,0,0,0-10.9-11.66A44.07,44.07,0,0,1,128,160a44.07,44.07,0,0,1-29.58-11.31,8,8,0,1,0-10.9,11.66A60.08,60.08,0,0,0,128,176Z" fill="#e74c3c"/></svg>',
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"><rect width="256" height="256" fill="none"/><path d="M176.62,187.38l-40.23-40.23,40.23-40.23a8,8,0,0,0-11.31-11.31L125.08,135.84,84.85,95.61A8,8,0,0,0,73.54,106.92l40.23,40.23-40.23,40.23a8,8,0,1,0,11.31,11.31l40.23-40.23,40.23,40.23a8,8,0,0,0,11.31-11.31Zm67.38-59.38A116,116,0,1,1,128,12,116.13,116.13,0,0,1,244,128Zm-16,0A100,100,0,1,0,128,228,100.11,100.11,0,0,0,228,128Z" fill="#3498db"/></svg>'
-  ];
+  // Presets Dinámicos vía Vite Glob Import
+  const designFiles = import.meta.glob('/public/designs/**/*.*', { eager: true });
+  
+  const presetsData = [];
+  const categoriesSet = new Set();
+  
+  for (const path in designFiles) {
+     // match[1] = Carpeta Categoría, match[2] = Nombre de Archivo
+     const match = path.match(/\/public\/designs\/([^/]+)\/([^/]+)$/);
+     if(match) {
+        let cat = match[1];
+        let name = match[2];
+        let url = path.replace('/public', ''); // Vite extrae de public a root en prod y dev
+        categoriesSet.add(cat);
+        presetsData.push({
+           category: cat,
+           name: name.toLowerCase(),
+           originalName: name,
+           url: url
+        });
+     }
+  }
 
-  dummyPresets.forEach(svgStr => {
-    const b64 = btoa(svgStr);
-    const dataUrl = `data:image/svg+xml;base64,${b64}`;
-
-    // Create DOM element for gallery
-    const imgWrapper = document.createElement('div');
-    imgWrapper.className = 'preset-img-wrapper';
-    const img = document.createElement('img');
-    img.src = dataUrl;
-    imgWrapper.appendChild(img);
-
-    // Click event to add
-    imgWrapper.addEventListener('click', () => {
-      addImageToCanvas(dataUrl);
-    });
-
-    presetGallery.appendChild(imgWrapper);
+  // Popular Select de Categorías
+  categoriesSet.forEach(cat => {
+     const opt = document.createElement('option');
+     opt.value = cat;
+     opt.innerText = cat;
+     presetCategory.appendChild(opt);
   });
+
+  // Renderizar y Filtrar
+  function renderGallery() {
+     presetGallery.innerHTML = '';
+     const filterText = presetSearch.value.toLowerCase();
+     const filterCat = presetCategory.value;
+
+     presetsData.forEach(item => {
+        // Filtrar por categoría
+        if(filterCat !== 'all' && item.category !== filterCat) return;
+        // Filtrar por búsqueda Contains
+        if(filterText && !item.name.includes(filterText)) return;
+
+        const imgWrapper = document.createElement('div');
+        imgWrapper.className = 'preset-img-wrapper';
+        imgWrapper.title = item.originalName; // Tooltip con el nombre
+        const img = document.createElement('img');
+        img.src = item.url;
+        imgWrapper.appendChild(img);
+        
+        imgWrapper.addEventListener('click', () => {
+          addImageToCanvas(item.url);
+        });
+        
+        presetGallery.appendChild(imgWrapper);
+     });
+  }
+
+  presetSearch.addEventListener('input', renderGallery);
+  presetCategory.addEventListener('change', renderGallery);
+
+  // Render inicial
+  renderGallery();
 
   // 6. Integración con WhatsApp
   whatsappBtn.addEventListener('click', async () => {
     whatsappBtn.innerHTML = '<i class="ph-fill ph-spinner ph-spin"></i> Generando...';
     whatsappBtn.disabled = true;
 
-    // Deseleccionar objetos antes de la captura para ocultar sus controles
+    // Deseleccionar objetos antes de la captura
     canvas.discardActiveObject();
     canvas.renderAll();
 
     try {
-      // Esperar a que el resize / render impacte
-      await new Promise(r => setTimeout(r, 100));
-
-      const wrapper = document.getElementById('canvas-wrapper');
-
-      // Removemos la mascara punteada para la captura
-      canvasWrapper.style.border = 'none';
-
-      // Capturar usando html2canvas
-      const canvasCap = await html2canvas(wrapper, {
-        useCORS: true,
-        backgroundColor: null,
-        scale: 2 // Max calidad
-      });
-
-      // Restauramos borde
-      canvasWrapper.style.border = '1px dashed rgba(255,255,255,0.2)';
-
       const talle = sizeSelect.value;
-      const color = window.getComputedStyle(tshirtColor).backgroundColor;
-      const msg = `¡Hola! Quiero hacer un pedido en Revelio.%0A%0A*Detalles de la remera:*%0A- Talle: ${talle}%0A- Vista: ${currentView}%0A%0ATe adjunto la imagen de mi diseño.`;
-      const phoneNumber = "5491178288321"; // Sustituir por el número
+      
+      const dataUrl = await generateExportImage(talle, currentColorName, canvas.width, canvas.height);
 
-      // Descargamos la imagen renderizada
+      // Descargamos la imagen renderizada como backup
       const link = document.createElement('a');
       link.download = `revelio_diseno_${talle}.png`;
-      link.href = canvasCap.toDataURL('image/png');
+      link.href = dataUrl;
       link.click();
 
+      // Intentar copiar al portapapeles
+      try {
+        const res = await fetch(dataUrl);
+        const blob = await res.blob();
+        await navigator.clipboard.write([
+          new ClipboardItem({ 'image/png': blob })
+        ]);
+        alert("🖼️ ¡Imagen multicapa generada y copiada al portapapeles!\n\nAl abrir WhatsApp, presiona 'Pegar' para adjuntar el diseño completo a la conversación.");
+      } catch(clipErr) {
+        console.warn("No se pudo copiar automáticamente: ", clipErr);
+      }
+
+      // El mensaje no especifica la vista ya que manda todo en una imagen. Agrega el color.
+      const msg = `¡Hola! Quiero hacer un pedido en Revelio.%0A%0A*Detalles de la prenda:*%0A- Talle: ${talle}%0A- Color: ${currentColorName}%0A%0ATe adjunto la imagen de mi diseño.`;
+      const phoneNumber = "5491178288321"; // Sustituir por el número
+      
       // Abrimos WhatsApp
       setTimeout(() => {
         window.location.href = `https://wa.me/${phoneNumber}?text=${msg}`;
-      }, 300);
-
+      }, 500);
+      
     } catch (e) {
       console.error(e);
-      alert('Hubo un error al generar la captura.');
+      alert('Hubo un error al generar la captura consolidada.');
     } finally {
       whatsappBtn.innerHTML = '<i class="ph-fill ph-whatsapp-logo"></i> Pedir por WhatsApp';
       whatsappBtn.disabled = false;
     }
   });
+
+  // Funciones de renderizado consolidado Nativo (Sin HTML2Canvas)
+  function loadImageNative(src) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = "Anonymous";
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = src;
+    });
+  }
+
+  async function generateExportImage(talle, colorHex, origCanvasW, origCanvasH) {
+    const viewW = 400;
+    const viewH = 480;
+    
+    // Guardar la vista actual que estamos editando al pool de json
+    canvasStates[currentView] = canvas.toJSON();
+
+    // Recolectar imagenes unicas 
+    const rawImages = new Set();
+    const views = ['front', 'back', 'side'];
+    views.forEach(v => {
+      if(canvasStates[v] && canvasStates[v].objects) {
+        canvasStates[v].objects.forEach(obj => {
+          if ((obj.type === 'image' || obj.type === 'FabricImage') && obj.src) {
+             rawImages.add(obj.src);
+          }
+        });
+      }
+    });
+
+    // Dimensiones finales
+    const finalW = viewW * 3 + 80;
+    const rawImageSize = 200;
+    const rawRows = Math.ceil(rawImages.size / 5);
+    const rawSectionH = rawImages.size > 0 ? (rawRows * rawImageSize + 100) : 0;
+    const finalH = viewH + 100 + rawSectionH;
+
+    const finalCanvas = document.createElement('canvas');
+    finalCanvas.width = finalW;
+    finalCanvas.height = finalH;
+    const ctx = finalCanvas.getContext('2d');
+
+    // Fondo blanco principal
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, finalW, finalH);
+
+    // Titulo
+    ctx.fillStyle = '#000000';
+    ctx.font = 'bold 24px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`Pedido Revelio - Talle: ${talle} | Color: ${colorHex}`, finalW / 2, 40);
+
+    const labels = ['FRENTE', 'ESPALDA', 'MANGAS'];
+    
+    for (let i = 0; i < views.length; i++) {
+        const v = views[i];
+        const offsetX = 20 + i * (viewW + 20);
+        const offsetY = 80;
+
+        ctx.fillStyle = '#333333';
+        ctx.font = 'bold 18px Inter, sans-serif';
+        ctx.fillText(labels[i], offsetX + viewW / 2, offsetY - 10);
+
+        const bgImg = await loadImageNative(`/tshirt_${v}.png`);
+        if(!bgImg) continue;
+
+        // 1. Color Sólido Máscara
+        ctx.fillStyle = colorHex;
+        ctx.fillRect(offsetX, offsetY, viewW, viewH);
+
+        // 2. Dest-in recorta el color a la remera
+        ctx.globalCompositeOperation = 'destination-in';
+        ctx.drawImage(bgImg, offsetX, offsetY, viewW, viewH);
+
+        // 3. Multiply para sobreimprimir luces y sombras de la tela
+        ctx.globalCompositeOperation = 'multiply';
+        ctx.drawImage(bgImg, offsetX, offsetY, viewW, viewH);
+        
+        ctx.globalCompositeOperation = 'source-over';
+
+        // 4. Dibujar el canvas particular escalado
+        if (canvasStates[v] && canvasStates[v].objects.length > 0) {
+           const tempCanvasEl = document.createElement('canvas');
+           tempCanvasEl.width = origCanvasW;
+           tempCanvasEl.height = origCanvasH;
+           // Instanciar static fabric sincrónico
+           const sCanvas = new fabric.StaticCanvas(tempCanvasEl);
+           await sCanvas.loadFromJSON(canvasStates[v]);
+           sCanvas.renderAll();
+           
+           const maskW = viewW * 0.40;
+           const maskH = viewH * 0.55;
+           const maskX = offsetX + (viewW * 0.30);
+           const maskY = offsetY + (viewH * 0.22);
+           
+           ctx.drawImage(sCanvas.getElement(), maskX, maskY, maskW, maskH);
+        }
+    }
+
+    // Dibujar elementos aislados para el sublimador/impresor
+    if (rawImages.size > 0) {
+      const rawStartY = viewH + 120;
+      ctx.fillStyle = '#000000';
+      ctx.font = 'bold 20px Inter, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('DISEÑOS ESTAMPADOS (Para imprimir y recortar):', 20, rawStartY);
+      
+      let imgX = 20;
+      let imgY = rawStartY + 20;
+      const arrPaths = Array.from(rawImages);
+      
+      for (let j = 0; j < arrPaths.length; j++) {
+         const rawImg = await loadImageNative(arrPaths[j]);
+         if(!rawImg) continue;
+         
+         const scale = Math.min(rawImageSize / rawImg.width, rawImageSize / rawImg.height);
+         const dw = rawImg.width * scale;
+         const dh = rawImg.height * scale;
+         
+         ctx.drawImage(rawImg, imgX, imgY, dw, dh);
+         ctx.strokeStyle = '#cccccc';
+         ctx.strokeRect(imgX, imgY, dw, dh);
+         
+         imgX += rawImageSize + 20;
+         if (imgX + rawImageSize > finalW) {
+            imgX = 20;
+            imgY += rawImageSize + 20;
+         }
+      }
+    }
+
+    return finalCanvas.toDataURL('image/png');
+  }
 });
