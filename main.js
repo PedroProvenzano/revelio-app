@@ -47,6 +47,21 @@ document.addEventListener('DOMContentLoaded', () => {
   canvas.on('selection:updated', showObjectControls);
   canvas.on('selection:cleared', hideObjectControls);
 
+  // Limitar el tamaño de escalado de los objetos
+  canvas.on('object:scaling', function(e) {
+    const obj = e.target;
+    const canvasWidth = canvas.width * 0.95; // Permitir hasta el 95% del ancho de la remera
+    const canvasHeight = canvas.height * 0.95;
+    
+    // Si el objeto escalado es más grande que el canvas, limitamos su escala
+    if (obj.getScaledWidth() > canvasWidth) {
+      obj.scaleToWidth(canvasWidth);
+    }
+    if (obj.getScaledHeight() > canvasHeight) {
+      obj.scaleToHeight(canvasHeight);
+    }
+  });
+
   function showObjectControls() {
     objectControls.style.display = 'flex';
   }
@@ -162,38 +177,72 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Presets Dinámicos vía Vite Glob Import
-  const designFiles = import.meta.glob('/public/designs/**/*.*', { eager: true });
+  // ----------------------------------------------------
+  // Carga de Diseños desde Cloudinary
+  // ----------------------------------------------------
+  const CLOUD_NAME = 'dy1svhgoh';
+  const MAIN_TAG = 'revelio';
   
-  const presetsData = [];
+  let presetsData = [];
   const categoriesSet = new Set();
   
-  for (const path in designFiles) {
-     // match[1] = Carpeta Categoría, match[2] = Nombre de Archivo
-     const match = path.match(/\/public\/designs\/([^/]+)\/([^/]+)$/);
-     if(match) {
-        let cat = match[1];
-        let name = match[2];
-        let url = path.replace('/public', ''); // Vite extrae de public a root en prod y dev
-        categoriesSet.add(cat);
-        presetsData.push({
-           category: cat,
-           name: name.toLowerCase(),
-           originalName: name,
-           url: url
-        });
-     }
+  async function loadCloudinaryDesigns() {
+      try {
+          const urlList = `https://res.cloudinary.com/${CLOUD_NAME}/image/list/${MAIN_TAG}.json`;
+          const response = await fetch(urlList);
+          
+          if (!response.ok) {
+              console.warn('No se encontraron imágenes en Cloudinary (o falta habilitar "Resource list").');
+              return;
+          }
+          
+          const data = await response.json();
+          categoriesSet.add('General'); // Categoría por defecto
+          
+          data.resources.forEach(res => {
+              // El public_id suele venir con formato de carpeta: "Categoria/Subcategoria/Nombre"
+              const parts = res.public_id.split('/');
+              let category = 'General';
+              let name = res.public_id;
+              
+              // Si subiste la imagen dentro de una carpeta en Cloudinary, usamos esa carpeta como categoría
+              if (parts.length > 1) {
+                  category = parts[0];
+                  name = parts[parts.length - 1]; // nombre del archivo sin carpeta
+              }
+              
+              // Capitalizar primer letra
+              category = category.charAt(0).toUpperCase() + category.slice(1);
+              categoriesSet.add(category);
+              
+              // Reconstruir URL final para descargar la imagen
+              const url = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/v${res.version}/${res.public_id}.${res.format}`;
+              
+              presetsData.push({
+                 category: category,
+                 name: name.toLowerCase(),
+                 originalName: name,
+                 url: url
+              });
+          });
+      } catch(err) {
+          console.error("Hubo un error cargando los diseños de Cloudinary:", err);
+      }
+      
+      // Popular Select de Categorías
+      presetCategory.innerHTML = '<option value="all">Todas las Categorías</option>';
+      categoriesSet.forEach(cat => {
+         const opt = document.createElement('option');
+         opt.value = cat;
+         opt.innerText = cat;
+         presetCategory.appendChild(opt);
+      });
+      
+      // Renderizar galería con las imágenes obtenidas
+      renderGallery();
   }
 
-  // Popular Select de Categorías
-  categoriesSet.forEach(cat => {
-     const opt = document.createElement('option');
-     opt.value = cat;
-     opt.innerText = cat;
-     presetCategory.appendChild(opt);
-  });
-
-  // Renderizar y Filtrar
+  // Función para Renderizar y Filtrar
   function renderGallery() {
      presetGallery.innerHTML = '';
      const filterText = presetSearch.value.toLowerCase();
@@ -207,9 +256,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const imgWrapper = document.createElement('div');
         imgWrapper.className = 'preset-img-wrapper';
-        imgWrapper.title = item.originalName; // Tooltip con el nombre
+        imgWrapper.title = item.originalName; // Tooltip con el nombre original
         const img = document.createElement('img');
         img.src = item.url;
+        // CORS para que al agarrar esta img al canvas y exportar no rompa
+        img.crossOrigin = 'anonymous'; 
         imgWrapper.appendChild(img);
         
         imgWrapper.addEventListener('click', () => {
@@ -223,8 +274,8 @@ document.addEventListener('DOMContentLoaded', () => {
   presetSearch.addEventListener('input', renderGallery);
   presetCategory.addEventListener('change', renderGallery);
 
-  // Render inicial
-  renderGallery();
+  // Iniciar la carga de Cloudinary
+  loadCloudinaryDesigns();
 
   // 6. Integración con WhatsApp
   whatsappBtn.addEventListener('click', async () => {
@@ -238,25 +289,37 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const talle = sizeSelect.value;
       
-      const dataUrl = await generateExportImage(talle, currentColorName, canvas.width, canvas.height);
+      const finalCanvas = await generateExportImage(talle, currentColorName, canvas.width, canvas.height);
 
-      // Descargamos la imagen renderizada como backup
-      const link = document.createElement('a');
-      link.download = `revelio_diseno_${talle}.png`;
-      link.href = dataUrl;
-      link.click();
+      // Usar toBlob envolviéndolo en una promesa para esperar a que termine
+      await new Promise((resolve) => {
+        finalCanvas.toBlob(async (blob) => {
+            if (!blob) {
+                alert('Error al generar la imagen. Intenta de nuevo.');
+                resolve(false);
+                return;
+            }
 
-      // Intentar copiar al portapapeles
-      try {
-        const res = await fetch(dataUrl);
-        const blob = await res.blob();
-        await navigator.clipboard.write([
-          new ClipboardItem({ 'image/png': blob })
-        ]);
-        alert("🖼️ ¡Imagen multicapa generada y copiada al portapapeles!\n\nAl abrir WhatsApp, presiona 'Pegar' para adjuntar el diseño completo a la conversación.");
-      } catch(clipErr) {
-        console.warn("No se pudo copiar automáticamente: ", clipErr);
-      }
+            // Descargamos la imagen renderizada como backup
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.download = `revelio_diseno_${talle}.png`;
+            link.href = url;
+            link.click();
+            URL.revokeObjectURL(url);
+
+            // Intentar copiar al portapapeles
+            try {
+              await navigator.clipboard.write([
+                new ClipboardItem({ 'image/png': blob })
+              ]);
+              alert("🖼️ ¡Imagen multicapa generada y copiada al portapapeles!\n\nAl abrir WhatsApp, presiona 'Pegar' para adjuntar el diseño completo a la conversación.");
+            } catch(clipErr) {
+              console.warn("No se pudo copiar automáticamente: ", clipErr);
+            }
+            resolve(true);
+        }, 'image/png');
+      });
 
       // El mensaje no especifica la vista ya que manda todo en una imagen. Agrega el color.
       const msg = `¡Hola! Quiero hacer un pedido en Revelio.%0A%0A*Detalles de la prenda:*%0A- Talle: ${talle}%0A- Color: ${currentColorName}%0A%0ATe adjunto la imagen de mi diseño.`;
@@ -408,6 +471,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    return finalCanvas.toDataURL('image/png');
+    return finalCanvas; // Retornamos el canvas directamente para poder usar toBlob
   }
 });
