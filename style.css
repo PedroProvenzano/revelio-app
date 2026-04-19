@@ -368,11 +368,13 @@ body {
 /* Vistas de remeras */
 .bg-front { background-image: url('/tshirt_front.png'); }
 .bg-back { background-image: url('/tshirt_back.png'); }
-.bg-side { background-image: url('/tshirt_side.png'); }
+.bg-side_left { background-image: url('/tshirt_side.png'); }
+.bg-side_right { background-image: url('/tshirt_side.png'); transform: scaleX(-1); }
 
 .mask-front { -webkit-mask-image: url('/tshirt_front.png'); mask-image: url('/tshirt_front.png'); }
 .mask-back { -webkit-mask-image: url('/tshirt_back.png'); mask-image: url('/tshirt_back.png'); }
-.mask-side { -webkit-mask-image: url('/tshirt_side.png'); mask-image: url('/tshirt_side.png'); }
+.mask-side_left { -webkit-mask-image: url('/tshirt_side.png'); mask-image: url('/tshirt_side.png'); }
+.mask-side_right { -webkit-mask-image: url('/tshirt_side.png'); mask-image: url('/tshirt_side.png'); transform: scaleX(-1); }
 
 .canvas-container-mask {
   position: absolute;

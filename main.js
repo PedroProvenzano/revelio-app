@@ -91,7 +91,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const canvasStates = {
     front: null,
     back: null,
-    side: null
+    side_left: null,
+    side_right: null
   };
 
   viewBtns.forEach(btn => {
@@ -367,7 +368,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Recolectar imagenes unicas 
     const rawImages = new Set();
-    const views = ['front', 'back', 'side'];
+    const views = ['front', 'back', 'side_left', 'side_right'];
     views.forEach(v => {
       if(canvasStates[v] && canvasStates[v].objects) {
         canvasStates[v].objects.forEach(obj => {
@@ -378,8 +379,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    // Dimensiones finales
-    const finalW = viewW * 3 + 80;
+    // Dimensiones finales ajustadas a 4 vistas en apaisado
+    const finalW = viewW * 4 + 100;
     const rawImageSize = 200;
     const rawRows = Math.ceil(rawImages.size / 5);
     const rawSectionH = rawImages.size > 0 ? (rawRows * rawImageSize + 100) : 0;
@@ -400,7 +401,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ctx.textAlign = 'center';
     ctx.fillText(`Pedido Revelio - Talle: ${talle} | Color: ${colorHex}`, finalW / 2, 40);
 
-    const labels = ['FRENTE', 'ESPALDA', 'MANGAS'];
+    const labels = ['FRENTE', 'ESPALDA', 'LADO IZQUIERDO', 'LADO DERECHO'];
     
     for (let i = 0; i < views.length; i++) {
         const v = views[i];
@@ -411,40 +412,65 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.font = 'bold 18px Inter, sans-serif';
         ctx.fillText(labels[i], offsetX + viewW / 2, offsetY - 10);
 
-        const bgImg = await loadImageNative(`/tshirt_${v}.png`);
+        const bgImgPath = (v === 'side_left' || v === 'side_right') ? '/tshirt_side.png' : `/tshirt_${v}.png`;
+        const bgImg = await loadImageNative(bgImgPath);
         if(!bgImg) continue;
 
-        // 1. Color Sólido Máscara
-        ctx.fillStyle = colorHex;
-        ctx.fillRect(offsetX, offsetY, viewW, viewH);
+        // Crear canvas temporal para la vista para evitar que el 'destination-in' borre las otras vistas ya dibujadas
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = viewW;
+        tempCanvas.height = viewH;
+        const tempCtx = tempCanvas.getContext('2d');
 
-        // 2. Dest-in recorta el color a la remera
-        ctx.globalCompositeOperation = 'destination-in';
-        ctx.drawImage(bgImg, offsetX, offsetY, viewW, viewH);
+        // 1. Color Sólido Máscara
+        tempCtx.fillStyle = colorHex;
+        tempCtx.fillRect(0, 0, viewW, viewH);
+
+        // Si es lado derecho, espejar la remera base usando transformaciones del ctx
+        tempCtx.globalCompositeOperation = 'destination-in';
+        if (v === 'side_right') {
+            tempCtx.save();
+            tempCtx.translate(viewW, 0);
+            tempCtx.scale(-1, 1);
+            tempCtx.drawImage(bgImg, 0, 0, viewW, viewH);
+            tempCtx.restore();
+        } else {
+            tempCtx.drawImage(bgImg, 0, 0, viewW, viewH);
+        }
 
         // 3. Multiply para sobreimprimir luces y sombras de la tela
-        ctx.globalCompositeOperation = 'multiply';
-        ctx.drawImage(bgImg, offsetX, offsetY, viewW, viewH);
+        tempCtx.globalCompositeOperation = 'multiply';
+        if (v === 'side_right') {
+            tempCtx.save();
+            tempCtx.translate(viewW, 0);
+            tempCtx.scale(-1, 1);
+            tempCtx.drawImage(bgImg, 0, 0, viewW, viewH);
+            tempCtx.restore();
+        } else {
+            tempCtx.drawImage(bgImg, 0, 0, viewW, viewH);
+        }
         
-        ctx.globalCompositeOperation = 'source-over';
+        tempCtx.globalCompositeOperation = 'source-over';
 
-        // 4. Dibujar el canvas particular escalado
+        // 4. Dibujar el canvas particular escalado encima
         if (canvasStates[v] && canvasStates[v].objects.length > 0) {
            const tempCanvasEl = document.createElement('canvas');
            tempCanvasEl.width = origCanvasW;
            tempCanvasEl.height = origCanvasH;
-           // Instanciar static fabric sincrónico
            const sCanvas = new fabric.StaticCanvas(tempCanvasEl);
            await sCanvas.loadFromJSON(canvasStates[v]);
            sCanvas.renderAll();
            
            const maskW = viewW * 0.40;
            const maskH = viewH * 0.55;
-           const maskX = offsetX + (viewW * 0.30);
-           const maskY = offsetY + (viewH * 0.22);
+           const maskX = (viewW * 0.30);
+           const maskY = (viewH * 0.22);
            
-           ctx.drawImage(sCanvas.getElement(), maskX, maskY, maskW, maskH);
+           tempCtx.drawImage(sCanvas.getElement(), maskX, maskY, maskW, maskH);
         }
+
+        // Ya procesados en el temp, dibujamos al final.
+        ctx.drawImage(tempCanvas, offsetX, offsetY);
     }
 
     // Dibujar elementos aislados para el sublimador/impresor
