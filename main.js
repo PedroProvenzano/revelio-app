@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let currentView = 'front';
   let currentColorName = 'Blanco';
+  let currentColorHex = '#ffffff';
 
   // 2. Inicialización de Fabric.js
   const canvasElement = document.getElementById('design-canvas');
@@ -50,9 +51,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Limitar el tamaño de escalado de los objetos
   canvas.on('object:scaling', function(e) {
     const obj = e.target;
-    // Permitir hasta el 60% del ancho/alto de la remera (un límite más estricto)
-    const canvasWidth = canvas.width * 0.60; 
-    const canvasHeight = canvas.height * 0.60;
+    // Permitir hasta el 75% del ancho/alto de la remera
+    const canvasWidth = canvas.width * 0.75; 
+    const canvasHeight = canvas.height * 0.75;
     
     // Si el objeto escalado es más grande que el canvas, limitamos su escala
     if (obj.getScaledWidth() > canvasWidth) {
@@ -127,6 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
       colorBtns.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       currentColorName = btn.dataset.name;
+      currentColorHex = btn.dataset.color;
       changeTshirtColor(btn.dataset.color);
     });
   });
@@ -135,8 +137,8 @@ document.addEventListener('DOMContentLoaded', () => {
   async function addImageToCanvas(imgUrl) {
     try {
       const img = await fabric.FabricImage.fromURL(imgUrl, { crossOrigin: 'anonymous' });
-      // Scale down if image is bigger than canvas
-      const scale = Math.min((canvas.width * 0.8) / (img.width || 1), (canvas.height * 0.8) / (img.height || 1), 1);
+      // Escalar la imagen inicial al máximo permitido (75%) si es más grande
+      const scale = Math.min((canvas.width * 0.75) / (img.width || 1), (canvas.height * 0.75) / (img.height || 1), 1);
 
       img.set({
         left: canvas.width / 2,
@@ -298,7 +300,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const talle = sizeSelect.value;
       
-      const finalCanvas = await generateExportImage(talle, currentColorName, canvas.width, canvas.height);
+      const finalCanvas = await generateExportImage(talle, currentColorHex, currentColorName, canvas.width, canvas.height);
 
       // Usar toBlob envolviéndolo en una promesa para esperar a que termine
       await new Promise((resolve) => {
@@ -359,7 +361,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  async function generateExportImage(talle, colorHex, origCanvasW, origCanvasH) {
+  async function generateExportImage(talle, colorHex, colorName, origCanvasW, origCanvasH) {
     const viewW = 400;
     const viewH = 480;
     
@@ -399,7 +401,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ctx.fillStyle = '#000000';
     ctx.font = 'bold 24px Inter, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(`Pedido Revelio - Talle: ${talle} | Color: ${colorHex}`, finalW / 2, 40);
+    ctx.fillText(`Pedido Revelio - Talle: ${talle} | Color: ${colorName}`, finalW / 2, 40);
 
     const labels = ['FRENTE', 'ESPALDA', 'LADO IZQUIERDO', 'LADO DERECHO'];
     
