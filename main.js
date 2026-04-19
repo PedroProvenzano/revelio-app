@@ -50,8 +50,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Limitar el tamaño de escalado de los objetos
   canvas.on('object:scaling', function(e) {
     const obj = e.target;
-    const canvasWidth = canvas.width * 0.95; // Permitir hasta el 95% del ancho de la remera
-    const canvasHeight = canvas.height * 0.95;
+    // Permitir hasta el 60% del ancho/alto de la remera (un límite más estricto)
+    const canvasWidth = canvas.width * 0.60; 
+    const canvasHeight = canvas.height * 0.60;
     
     // Si el objeto escalado es más grande que el canvas, limitamos su escala
     if (obj.getScaledWidth() > canvasWidth) {
@@ -200,15 +201,22 @@ document.addEventListener('DOMContentLoaded', () => {
           categoriesSet.add('General'); // Categoría por defecto
           
           data.resources.forEach(res => {
-              // El public_id suele venir con formato de carpeta: "Categoria/Subcategoria/Nombre"
-              const parts = res.public_id.split('/');
+              // Cloudinary ahora suele enviar las carpetas en la propiedad `asset_folder`
               let category = 'General';
               let name = res.public_id;
               
-              // Si subiste la imagen dentro de una carpeta en Cloudinary, usamos esa carpeta como categoría
-              if (parts.length > 1) {
-                  category = parts[0];
-                  name = parts[parts.length - 1]; // nombre del archivo sin carpeta
+              if (res.asset_folder && res.asset_folder.trim() !== '') {
+                  // Si Cloudinary provee la carpeta dinámica, priorizamos esa
+                  category = res.asset_folder;
+                  // Si public_id contiene "/", nos quedamos con la última parte como nombre
+                  name = res.public_id.split('/').pop();
+              } else {
+                  // Fallback: Si el public_id suele venir con formato de carpeta: "Categoria/Subcategoria/Nombre"
+                  const parts = res.public_id.split('/');
+                  if (parts.length > 1) {
+                      category = parts[0];
+                      name = parts[parts.length - 1]; // nombre del archivo sin carpeta
+                  }
               }
               
               // Capitalizar primer letra
