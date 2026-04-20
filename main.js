@@ -28,9 +28,27 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnModalWa = document.getElementById('btn-modal-wa');
   const btnModalClose = document.getElementById('btn-modal-close');
 
-  btnModalClose.addEventListener('click', () => {
-    whatsappModal.style.display = 'none';
-  });
+  const btnSizeGuide = document.getElementById('btn-size-guide');
+  const sizeModal = document.getElementById('size-modal');
+  const btnSizeClose = document.getElementById('btn-size-close');
+
+  if (btnModalClose) {
+    btnModalClose.addEventListener('click', () => {
+      whatsappModal.style.display = 'none';
+    });
+  }
+
+  if (btnSizeGuide) {
+    btnSizeGuide.addEventListener('click', () => {
+      sizeModal.style.display = 'flex';
+    });
+  }
+  
+  if (btnSizeClose) {
+    btnSizeClose.addEventListener('click', () => {
+      sizeModal.style.display = 'none';
+    });
+  }
 
   let currentView = 'front';
   let currentColorName = 'Blanco';

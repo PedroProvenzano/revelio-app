@@ -64,7 +64,10 @@
       <div class="tool-section">
         <h3>4. Ajusta los Detalles</h3>
         <div class="details-form">
-          <label for="size-select">Talle de la Remera (Largo x Ancho)</label>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <label for="size-select" style="margin-bottom: 0;">Talle de la Remera</label>
+            <button id="btn-size-guide" class="size-guide-btn"><i class="ph ph-ruler"></i> Tabla de Talles</button>
+          </div>
           <select id="size-select">
             <option value="XS">Talle XS - L58 A44</option>
             <option value="S">Talle S - L62 A47</option>
@@ -125,6 +128,19 @@
           <i class="ph-fill ph-whatsapp-logo"></i> Abrir WhatsApp
         </button>
         <button id="btn-modal-close" class="secondary-btn">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Guía de Talles -->
+  <div id="size-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content modal-large">
+      <h3><i class="ph ph-ruler"></i> Guía de Talles</h3>
+      <div class="size-img-container" style="margin: 1rem 0; overflow-y: auto; max-height: 60vh;">
+        <img src="/src/assets/talles.jpeg" alt="Tabla de Talles" style="max-width: 100%; height: auto; border-radius: var(--radius-sm); border: 1px solid var(--surface-border);" />
+      </div>
+      <div class="modal-actions">
+        <button id="btn-size-close" class="secondary-btn">Cerrar</button>
       </div>
     </div>
   </div>

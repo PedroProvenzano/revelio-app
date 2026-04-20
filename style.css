@@ -317,7 +317,6 @@ body {
   display: block;
   font-size: 0.85rem;
   color: var(--text-muted);
-  margin-bottom: 0.5rem;
 }
 .details-form select {
   width: 100%;
@@ -330,6 +329,25 @@ body {
   font-size: 0.95rem;
   appearance: none;
   cursor: pointer;
+}
+
+.size-guide-btn {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  transition: color 0.2s;
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-sm);
+}
+.size-guide-btn:hover {
+  color: var(--primary-hover);
+  background: rgba(108, 92, 231, 0.1);
 }
 
 /* Fill bottom */
@@ -593,6 +611,9 @@ body {
   text-align: center;
   box-shadow: var(--shadow-lg);
   animation: slideIn 0.3s ease-out forwards;
+}
+.modal-large {
+  max-width: 650px;
 }
 @keyframes slideIn {
   from { opacity: 0; transform: translateY(20px); }
