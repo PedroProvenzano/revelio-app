@@ -303,18 +303,35 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnViewLarge) btnViewLarge.addEventListener('click', () => updatePresetView('large'));
   if (btnViewList) btnViewList.addEventListener('click', () => updatePresetView('list'));
 
+  let currentPage = 1;
+  const ITEMS_PER_PAGE = 9;
+
   // Función para Renderizar y Filtrar
   function renderGallery() {
      presetGallery.innerHTML = '';
+     const paginationControls = document.getElementById('pagination-controls');
+     if (paginationControls) paginationControls.innerHTML = '';
+
      const filterText = presetSearch.value.toLowerCase();
      const filterCat = presetCategory.value;
 
-     presetsData.forEach(item => {
-        // Filtrar por categoría
-        if(filterCat !== 'all' && item.category !== filterCat) return;
-        // Filtrar por búsqueda Contains
-        if(filterText && !item.name.includes(filterText)) return;
+     // 1. Filtrar
+     const filteredData = presetsData.filter(item => {
+        if(filterCat !== 'all' && item.category !== filterCat) return false;
+        if(filterText && !item.name.includes(filterText)) return false;
+        return true;
+     });
 
+     // 2. Paginar
+     const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
+     if (currentPage > totalPages) currentPage = Math.max(1, totalPages);
+     
+     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+     const endIndex = startIndex + ITEMS_PER_PAGE;
+     const pageData = filteredData.slice(startIndex, endIndex);
+
+     // 3. Renderizar items
+     pageData.forEach(item => {
         const imgWrapper = document.createElement('div');
         imgWrapper.className = 'preset-img-wrapper';
         imgWrapper.title = item.originalName; // Tooltip con el nombre original
@@ -340,10 +357,24 @@ document.addEventListener('DOMContentLoaded', () => {
         
         presetGallery.appendChild(imgWrapper);
      });
+
+     // 4. Renderizar controles de paginación
+     if (paginationControls && totalPages > 1) {
+       for (let i = 1; i <= totalPages; i++) {
+         const btn = document.createElement('button');
+         btn.className = `page-btn ${i === currentPage ? 'active' : ''}`;
+         btn.innerText = i;
+         btn.addEventListener('click', () => {
+            currentPage = i;
+            renderGallery();
+         });
+         paginationControls.appendChild(btn);
+       }
+     }
   }
 
-  presetSearch.addEventListener('input', renderGallery);
-  presetCategory.addEventListener('change', renderGallery);
+  presetSearch.addEventListener('input', () => { currentPage = 1; renderGallery(); });
+  presetCategory.addEventListener('change', () => { currentPage = 1; renderGallery(); });
 
   // Iniciar la carga de Cloudinary
   loadCloudinaryDesigns();

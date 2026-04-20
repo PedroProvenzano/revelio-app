@@ -228,7 +228,7 @@ body {
 }
 .preset-gallery.view-large .preset-img-wrapper {
   aspect-ratio: auto;
-  height: 120px;
+  height: 250px;
 }
 
 /* List view */
@@ -282,6 +282,34 @@ body {
   width: 80%;
   height: 80%;
   object-fit: contain;
+}
+
+/* Pagination */
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+.page-btn {
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  color: var(--text-main);
+  border-radius: var(--radius-sm);
+  padding: 0.3rem 0.6rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.85rem;
+}
+.page-btn:hover {
+  background: var(--surface-border);
+}
+.page-btn.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
 }
 
 /* Forms */
