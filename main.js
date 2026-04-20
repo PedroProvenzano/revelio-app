@@ -411,25 +411,49 @@ document.addEventListener('DOMContentLoaded', () => {
             URL.revokeObjectURL(url);
 
             // Intentar copiar al portapapeles
+            let copiado = false;
             try {
               await navigator.clipboard.write([
                 new ClipboardItem({ 'image/png': blob })
               ]);
-              alert("🖼️ ¡Imagen multicapa generada y copiada al portapapeles!\n\nAl abrir WhatsApp, presiona 'Pegar' para adjuntar el diseño completo a la conversación.");
+              copiado = true;
             } catch(clipErr) {
               console.warn("No se pudo copiar automáticamente: ", clipErr);
             }
-            resolve(true);
+            
+            // Le damos unos milisegundos al navegador para que procese el link.click() y arranque la descarga
+            setTimeout(() => {
+               if (copiado) {
+                 alert("🖼️ ¡Descarga iniciada y copiada al portapapeles!\n\nAl abrir WhatsApp, presiona 'Pegar' o adjuntala desde tu galería.");
+               } else {
+                 alert("🖼️ ¡Diseño descargado en tu dispositivo!\n\nPresiona OK para ir a WhatsApp y recordá adjuntar la imagen desde tu galería.");
+               }
+               resolve(true); // Resolvemos y avanzamos al redirect solo después de apretar OK
+            }, 600);
         }, 'image/png');
       });
 
       // El mensaje no especifica la vista ya que manda todo en una imagen. Agrega el color.
       const msg = `¡Hola! Quiero hacer un pedido en Revelio.%0A%0A*Detalles de la prenda:*%0A- Talle: ${talle}%0A- Color: ${currentColorName}%0A%0ATe adjunto la imagen de mi diseño.`;
       const phoneNumber = "5491178288321"; // Sustituir por el número
+
+      // Usar api.whatsapp.com suele ser más confiable en celulares problemáticos que wa.me
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       
-      // Abrimos WhatsApp
+      // Construir la URL más compatible
+      let whatsappUrl = '';
+      if (isMobile) {
+        // Directo al protocolo de la app en celulares, casi nunca falla si está instalada.
+        whatsappUrl = `whatsapp://send?phone=${phoneNumber}&text=${msg}`;
+      } else {
+        // En PC, api.whatsapp redirige a WhatsApp Web limpio
+        whatsappUrl = `https://api.whatsapp.com/send?phone=${phoneNumber}&text=${msg}`;
+      }
+
+      // Evitamos conflictos de asincronía abriendo o redirigiendo
       setTimeout(() => {
-        window.location.href = `https://wa.me/${phoneNumber}?text=${msg}`;
+        // Intentamos abrir la url
+        window.location.href = whatsappUrl;
       }, 500);
       
     } catch (e) {
