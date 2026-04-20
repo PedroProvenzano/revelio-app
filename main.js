@@ -17,6 +17,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const objectControls = document.getElementById('object-controls');
   const btnBringFront = document.getElementById('btn-bring-front');
   const btnDelete = document.getElementById('btn-delete');
+  const btnViewGrid = document.getElementById('view-grid');
+  const btnViewLarge = document.getElementById('view-large');
+  const btnViewList = document.getElementById('view-list');
+  const btnPreview3d = document.getElementById('btn-preview-3d');
 
   let currentView = 'front';
   let currentColorName = 'Blanco';
@@ -117,6 +121,37 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   });
+
+  // 3.5 Preview 3D
+  let isRotating = false;
+  if (btnPreview3d) {
+    btnPreview3d.addEventListener('click', async () => {
+      if (isRotating) return;
+      isRotating = true;
+      btnPreview3d.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Girando...';
+      
+      const viewsSequence = ['front', 'side_right', 'back', 'side_left'];
+      const currentIdx = viewsSequence.indexOf(currentView);
+      
+      // Perform 2 full rotations
+      const totalSteps = viewsSequence.length * 2;
+      
+      for (let i = 1; i <= totalSteps; i++) {
+        const nextIdx = (currentIdx + i) % viewsSequence.length;
+        const nextView = viewsSequence[nextIdx];
+        
+        const btn = Array.from(viewBtns).find(b => b.dataset.view === nextView);
+        if (btn) {
+           btn.click();
+        }
+        
+        await new Promise(r => setTimeout(r, 600)); // 600ms frame
+      }
+      
+      btnPreview3d.innerHTML = '<i class="ph ph-arrows-clockwise"></i> Preview 360';
+      isRotating = false;
+    });
+  }
 
   // 4. Color Picker
   function changeTshirtColor(color) {
@@ -253,6 +288,21 @@ document.addEventListener('DOMContentLoaded', () => {
       renderGallery();
   }
 
+  // Vista Toggle Logic
+  const presetViewBtns = [btnViewGrid, btnViewLarge, btnViewList];
+  function updatePresetView(viewType) {
+    if (presetGallery) {
+      presetGallery.className = `preset-gallery view-${viewType}`;
+    }
+    presetViewBtns.forEach(b => { if (b) b.classList.remove('active'); });
+    const activeBtn = document.getElementById(`view-${viewType}`);
+    if (activeBtn) activeBtn.classList.add('active');
+  }
+
+  if (btnViewGrid) btnViewGrid.addEventListener('click', () => updatePresetView('grid'));
+  if (btnViewLarge) btnViewLarge.addEventListener('click', () => updatePresetView('large'));
+  if (btnViewList) btnViewList.addEventListener('click', () => updatePresetView('list'));
+
   // Función para Renderizar y Filtrar
   function renderGallery() {
      presetGallery.innerHTML = '';
@@ -273,6 +323,16 @@ document.addEventListener('DOMContentLoaded', () => {
         // CORS para que al agarrar esta img al canvas y exportar no rompa
         img.crossOrigin = 'anonymous'; 
         imgWrapper.appendChild(img);
+
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'preset-name';
+        // Formatear el nombre para que se vea más lindo (sin extension, etc)
+        let cleanName = item.originalName;
+        if (cleanName.includes('.')) {
+          cleanName = cleanName.split('.').slice(0, -1).join('.');
+        }
+        nameSpan.innerText = cleanName;
+        imgWrapper.appendChild(nameSpan);
         
         imgWrapper.addEventListener('click', () => {
           addImageToCanvas(item.url);

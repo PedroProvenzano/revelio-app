@@ -38,14 +38,21 @@
         <input type="file" id="image-upload" accept="image/png, image/jpeg, image/svg+xml" style="display: none;" />
 
         <div class="presets">
-          <p>O elige un diseño predefinido:</p>
+          <div class="preset-controls-header">
+            <p>O elige un diseño predefinido:</p>
+            <div class="view-toggles">
+              <button id="view-grid" class="active" title="Grilla pequeña"><i class="ph ph-grid-nine"></i></button>
+              <button id="view-large" title="Grilla grande"><i class="ph ph-squares-four"></i></button>
+              <button id="view-list" title="Lista"><i class="ph ph-list-dashes"></i></button>
+            </div>
+          </div>
           <div class="preset-filters">
             <input type="text" id="preset-search" placeholder="Buscar diseño..." />
             <select id="preset-category">
               <option value="all">Todas las Categorías</option>
             </select>
           </div>
-          <div class="preset-gallery" id="preset-gallery">
+          <div class="preset-gallery view-grid" id="preset-gallery">
             <!-- Se generarán dinámicamente -->
           </div>
         </div>
@@ -85,6 +92,7 @@
           <button class="view-btn" data-view="side_left">Lado Izq.</button>
           <button class="view-btn" data-view="side_right">Lado Der.</button>
         </div>
+        <button id="btn-preview-3d" class="preview-3d-btn" title="Vista 3D 360°"><i class="ph ph-arrows-clockwise"></i> Preview 360</button>
       </div>
 
       <!-- Floating controls for canvas objects -->
