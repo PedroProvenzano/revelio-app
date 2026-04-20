@@ -22,6 +22,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnViewList = document.getElementById('view-list');
   const btnPreview3d = document.getElementById('btn-preview-3d');
 
+  // Modal elements
+  const whatsappModal = document.getElementById('whatsapp-modal');
+  const modalDesc = document.getElementById('modal-desc');
+  const btnModalWa = document.getElementById('btn-modal-wa');
+  const btnModalClose = document.getElementById('btn-modal-close');
+
+  btnModalClose.addEventListener('click', () => {
+    whatsappModal.style.display = 'none';
+  });
+
   let currentView = 'front';
   let currentColorName = 'Blanco';
   let currentColorHex = '#ffffff';
@@ -421,40 +431,38 @@ document.addEventListener('DOMContentLoaded', () => {
               console.warn("No se pudo copiar automáticamente: ", clipErr);
             }
             
-            // Le damos unos milisegundos al navegador para que procese el link.click() y arranque la descarga
+            // Le damos unos milisegundos mínimos y mostramos el modal (que NO congela el navegador)
             setTimeout(() => {
                if (copiado) {
-                 alert("🖼️ ¡Descarga iniciada y copiada al portapapeles!\n\nAl abrir WhatsApp, presiona 'Pegar' o adjuntala desde tu galería.");
+                 modalDesc.innerText = "¡Descarga iniciada y diseño copiado al portapapeles!";
                } else {
-                 alert("🖼️ ¡Diseño descargado en tu dispositivo!\n\nPresiona OK para ir a WhatsApp y recordá adjuntar la imagen desde tu galería.");
+                 modalDesc.innerText = "¡Diseño descargado en tu dispositivo!";
                }
-               resolve(true); // Resolvemos y avanzamos al redirect solo después de apretar OK
+               whatsappModal.style.display = 'flex';
+               
+               // Resolvemos aquí. Ya generamos la imagen y activamos la UI. El usuario decide cuándo ir a WhatsApp.
+               resolve(true); 
             }, 600);
         }, 'image/png');
       });
 
-      // El mensaje no especifica la vista ya que manda todo en una imagen. Agrega el color.
+      // Construcción del enlace WhatsApp
       const msg = `¡Hola! Quiero hacer un pedido en Revelio.%0A%0A*Detalles de la prenda:*%0A- Talle: ${talle}%0A- Color: ${currentColorName}%0A%0ATe adjunto la imagen de mi diseño.`;
-      const phoneNumber = "5491178288321"; // Sustituir por el número
+      const phoneNumber = "5491178288321";
 
-      // Usar api.whatsapp.com suele ser más confiable en celulares problemáticos que wa.me
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      
-      // Construir la URL más compatible
       let whatsappUrl = '';
       if (isMobile) {
-        // Directo al protocolo de la app en celulares, casi nunca falla si está instalada.
         whatsappUrl = `whatsapp://send?phone=${phoneNumber}&text=${msg}`;
       } else {
-        // En PC, api.whatsapp redirige a WhatsApp Web limpio
         whatsappUrl = `https://api.whatsapp.com/send?phone=${phoneNumber}&text=${msg}`;
       }
 
-      // Evitamos conflictos de asincronía abriendo o redirigiendo
-      setTimeout(() => {
-        // Intentamos abrir la url
-        window.location.href = whatsappUrl;
-      }, 500);
+      // El botón del modal lleva la acción final
+      btnModalWa.onclick = () => {
+         window.location.href = whatsappUrl;
+         whatsappModal.style.display = 'none'; // ocultamos visualmente
+      };
       
     } catch (e) {
       console.error(e);
