@@ -430,15 +430,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // Descargamos la imagen renderizada como backup
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.download = `revelio_diseno_${talle}.png`;
-            link.href = url;
-            link.click();
-            URL.revokeObjectURL(url);
-
-            // Intentar copiar al portapapeles
+            // Intentar copiar al portapapeles primero (en vez de descargar automáticamente)
             let copiado = false;
             try {
               await navigator.clipboard.write([
@@ -446,15 +438,25 @@ document.addEventListener('DOMContentLoaded', () => {
               ]);
               copiado = true;
             } catch(clipErr) {
-              console.warn("No se pudo copiar automáticamente: ", clipErr);
+              console.warn("No se pudo copiar al portapapeles automáticamente, usando descarga como respaldo: ", clipErr);
+            }
+            
+            // Si falló copiar (común en algunos celulares o sin HTTPS), forzamos la descarga como Plan B
+            if (!copiado) {
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.download = `revelio_diseno_${talle}.png`;
+              link.href = url;
+              link.click();
+              URL.revokeObjectURL(url);
             }
             
             // Le damos unos milisegundos mínimos y mostramos el modal (que NO congela el navegador)
             setTimeout(() => {
                if (copiado) {
-                 modalDesc.innerText = "¡Descarga iniciada y diseño copiado al portapapeles!";
+                 modalDesc.innerText = "¡Diseño copiado al portapapeles exitosamente!\nAl abrir WhatsApp, solo presioná 'Pegar' en el chat para enviar tu diseño.";
                } else {
-                 modalDesc.innerText = "¡Diseño descargado en tu dispositivo!";
+                 modalDesc.innerText = "Tu navegador no permitió copiar la imagen directo, así que la descargamos en tu dispositivo.\n\nPara enviarla, al abrir WhatsApp adjuntala desde la galería como cualquier otra foto.";
                }
                whatsappModal.style.display = 'flex';
                
