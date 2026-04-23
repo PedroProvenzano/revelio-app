@@ -154,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
   btnDelete.addEventListener('click', () => {
     const activeObjs = canvas.getActiveObjects();
     if (activeObjs.length) {
-      const toDelete = activeObjs.filter(obj => !obj.isRequiredLogo);
+      const toDelete = activeObjs.filter(obj => !(obj.isRequiredLogo || (obj.lockScalingX && obj.lockScalingY)));
       if (toDelete.length > 0) {
         canvas.discardActiveObject();
         toDelete.forEach(obj => canvas.remove(obj));
@@ -752,7 +752,7 @@ document.addEventListener('DOMContentLoaded', () => {
       let latestAngle = 0;
 
       // 1. Encontrar el logo actual para conservar su posición/rotación
-      const activeLogo = canvas.getObjects().find(o => o.isRequiredLogo);
+      const activeLogo = canvas.getObjects().find(o => o.isRequiredLogo || (o.lockScalingX && o.lockScalingY));
       if (activeLogo) {
           latestLeft = activeLogo.left;
           latestTop = activeLogo.top;
@@ -763,7 +763,7 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
           for (const v of Object.keys(canvasStates)) {
               if (canvasStates[v] && canvasStates[v].objects) {
-                  const stateLogo = canvasStates[v].objects.find(o => o.isRequiredLogo);
+                  const stateLogo = canvasStates[v].objects.find(o => o.isRequiredLogo || (o.lockScalingX && o.lockScalingY));
                   if (stateLogo) {
                       latestLeft = stateLogo.left;
                       latestTop = stateLogo.top;
@@ -777,7 +777,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // 2. Eliminar el logo de todos los estados guardados
       Object.keys(canvasStates).forEach(v => {
           if (canvasStates[v] && canvasStates[v].objects) {
-              canvasStates[v].objects = canvasStates[v].objects.filter(o => !o.isRequiredLogo);
+              canvasStates[v].objects = canvasStates[v].objects.filter(o => !(o.isRequiredLogo || (o.lockScalingX && o.lockScalingY)));
           }
       });
 
