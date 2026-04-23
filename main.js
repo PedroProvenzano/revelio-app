@@ -114,8 +114,13 @@ document.addEventListener('DOMContentLoaded', () => {
   btnDelete.addEventListener('click', () => {
     const activeObjs = canvas.getActiveObjects();
     if (activeObjs.length) {
-      canvas.discardActiveObject();
-      activeObjs.forEach(obj => canvas.remove(obj));
+      const toDelete = activeObjs.filter(obj => !obj.isRequiredLogo);
+      if (toDelete.length > 0) {
+        canvas.discardActiveObject();
+        toDelete.forEach(obj => canvas.remove(obj));
+      } else {
+        alert("El logo de la marca es obligatorio y no puede ser eliminado.");
+      }
     }
   });
 
@@ -134,7 +139,7 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.classList.add('active');
 
       // Guardar estado actual
-      canvasStates[currentView] = canvas.toJSON();
+      canvasStates[currentView] = canvas.toJSON(['isRequiredLogo']);
 
       const newView = btn.dataset.view;
       currentView = newView;
@@ -145,6 +150,16 @@ document.addEventListener('DOMContentLoaded', () => {
       canvas.clear();
       if (canvasStates[currentView]) {
         await canvas.loadFromJSON(canvasStates[currentView]);
+        // Re-aplicar restricciones al logo obligatorio si existe en esta vista
+        const logo = canvas.getObjects().find(o => o.isRequiredLogo);
+        if (logo) {
+            logo.setControlsVisibility({
+                tl: false, tr: false, br: false, bl: false,
+                ml: false, mt: false, mr: false, mb: false,
+                mtr: true
+            });
+            logo.set({ lockScalingX: true, lockScalingY: true });
+        }
         canvas.renderAll();
       }
     });
@@ -509,7 +524,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const viewH = 480;
     
     // Guardar la vista actual que estamos editando al pool de json
-    canvasStates[currentView] = canvas.toJSON();
+    canvasStates[currentView] = canvas.toJSON(['isRequiredLogo']);
 
     // Recolectar imagenes unicas 
     const rawImages = new Set();
@@ -652,4 +667,104 @@ document.addEventListener('DOMContentLoaded', () => {
 
     return finalCanvas; // Retornamos el canvas directamente para poder usar toBlob
   }
+
+  // 7. Lógica del Logo Obligatorio
+  async function updateMandatoryLogo(switchView = true) {
+    const colorSelect = document.getElementById('mandatory-logo-color');
+    const viewSelect = document.getElementById('mandatory-logo-view');
+    if (!colorSelect || !viewSelect) return;
+    
+    const color = colorSelect.value;
+    const targetView = viewSelect.value;
+    const logoUrl = color === 'black' ? '/logo_black.png' : '/logo_white.png';
+
+    let latestLeft = canvas.width / 2;
+    let latestTop = canvas.height / 4;
+    let latestAngle = 0;
+
+    // 1. Encontrar el logo actual para conservar su posición/rotación
+    const activeLogo = canvas.getObjects().find(o => o.isRequiredLogo);
+    if (activeLogo) {
+        latestLeft = activeLogo.left;
+        latestTop = activeLogo.top;
+        latestAngle = activeLogo.angle;
+        canvas.remove(activeLogo);
+    } else {
+        for (const v of Object.keys(canvasStates)) {
+            if (canvasStates[v] && canvasStates[v].objects) {
+                const stateLogo = canvasStates[v].objects.find(o => o.isRequiredLogo);
+                if (stateLogo) {
+                    latestLeft = stateLogo.left;
+                    latestTop = stateLogo.top;
+                    latestAngle = stateLogo.angle;
+                    break;
+                }
+            }
+        }
+    }
+
+    // 2. Eliminar el logo de todos los estados guardados
+    Object.keys(canvasStates).forEach(v => {
+        if (canvasStates[v] && canvasStates[v].objects) {
+            canvasStates[v].objects = canvasStates[v].objects.filter(o => !o.isRequiredLogo);
+        }
+    });
+
+    try {
+      const img = await fabric.FabricImage.fromURL(logoUrl, { crossOrigin: 'anonymous' });
+      const maxWidth = canvas.width * 0.75;
+      const targetWidth = maxWidth * 0.75; // 3/4 del ancho máximo
+      const scale = targetWidth / (img.width || 1);
+
+      img.set({
+        left: latestLeft,
+        top: latestTop,
+        angle: latestAngle,
+        originX: 'center',
+        originY: 'center',
+        scaleX: scale,
+        scaleY: scale,
+        cornerColor: '#6c5ce7',
+        cornerStyle: 'circle',
+        borderColor: '#6c5ce7',
+        transparentCorners: false,
+        lockScalingX: true,
+        lockScalingY: true,
+        isRequiredLogo: true
+      });
+
+      img.setControlsVisibility({
+        tl: false, tr: false, br: false, bl: false,
+        ml: false, mt: false, mr: false, mb: false,
+        mtr: true
+      });
+
+      // 3. Añadirlo a la vista correspondiente
+      if (currentView === targetView) {
+          canvas.add(img);
+          canvas.requestRenderAll();
+      } else {
+          if (!canvasStates[targetView]) {
+              canvasStates[targetView] = { version: "6.0.0", objects: [] };
+          }
+          canvasStates[targetView].objects.push(img.toObject(['isRequiredLogo']));
+          
+          if (switchView) {
+             const btn = Array.from(viewBtns).find(b => b.dataset.view === targetView);
+             if (btn) btn.click();
+          }
+      }
+    } catch (err) {
+      console.error("Error loading mandatory logo", err);
+    }
+  }
+
+  const logoColorSelect = document.getElementById('mandatory-logo-color');
+  const logoViewSelect = document.getElementById('mandatory-logo-view');
+  if (logoColorSelect) logoColorSelect.addEventListener('change', () => updateMandatoryLogo(true));
+  if (logoViewSelect) logoViewSelect.addEventListener('change', () => updateMandatoryLogo(true));
+
+  // Inicializar logo al cargar
+  setTimeout(() => updateMandatoryLogo(false), 500);
+
 });
