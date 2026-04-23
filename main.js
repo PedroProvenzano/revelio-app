@@ -150,16 +150,34 @@ document.addEventListener('DOMContentLoaded', () => {
       canvas.clear();
       if (canvasStates[currentView]) {
         await canvas.loadFromJSON(canvasStates[currentView]);
-        // Re-aplicar restricciones al logo obligatorio si existe en esta vista
-        const logo = canvas.getObjects().find(o => o.isRequiredLogo);
-        if (logo) {
-            logo.setControlsVisibility({
-                tl: false, tr: false, br: false, bl: false,
-                ml: false, mt: false, mr: false, mb: false,
-                mtr: true
+        
+        // Re-aplicar restricciones y estilos visuales a todos los objetos 
+        // ya que toJSON no guarda estilos de esquinas ni visibilidad de controles.
+        canvas.getObjects().forEach(obj => {
+            // Estilos estéticos compartidos por todos
+            obj.set({
+                cornerColor: '#6c5ce7',
+                cornerStyle: 'circle',
+                borderColor: '#6c5ce7',
+                transparentCorners: false
             });
-            logo.set({ lockScalingX: true, lockScalingY: true });
-        }
+
+            if (obj.isRequiredLogo) {
+                obj.setControlsVisibility({
+                    tl: false, tr: false, br: false, bl: false,
+                    ml: false, mt: false, mr: false, mb: false,
+                    mtr: true
+                });
+                obj.set({ lockScalingX: true, lockScalingY: true });
+            } else {
+                // Restricciones para estampas normales
+                obj.set({ lockUniScaling: true });
+                obj.setControlsVisibility({
+                    mt: false, mb: false, ml: false, mr: false
+                });
+            }
+        });
+        
         canvas.renderAll();
       }
     });
@@ -715,8 +733,8 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const img = await fabric.FabricImage.fromURL(logoUrl, { crossOrigin: 'anonymous' });
       const maxWidth = canvas.width * 0.75;
-      // El usuario pidió un tamaño "chico". Usamos un 25% del ancho máximo permitido para diseños.
-      const targetWidth = maxWidth * 0.25; 
+      // 3/4 del ancho máximo permitido
+      const targetWidth = maxWidth * 0.75; 
       const scale = targetWidth / (img.width || 1);
 
       img.set({
