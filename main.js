@@ -151,10 +151,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  const isLogoObj = (o) => {
+      if (o.isRequiredLogo) return true;
+      if (o.lockScalingX && o.lockScalingY) return true;
+      if (typeof o.getSrc === 'function') {
+          const src = o.getSrc();
+          return src && (src.includes('logo_black.png') || src.includes('logo_white.png'));
+      }
+      return o.src && typeof o.src === 'string' && (o.src.includes('logo_black.png') || o.src.includes('logo_white.png'));
+  };
+
   btnDelete.addEventListener('click', () => {
     const activeObjs = canvas.getActiveObjects();
     if (activeObjs.length) {
-      const toDelete = activeObjs.filter(obj => !(obj.isRequiredLogo || (obj.lockScalingX && obj.lockScalingY)));
+      const toDelete = activeObjs.filter(obj => !isLogoObj(obj));
       if (toDelete.length > 0) {
         canvas.discardActiveObject();
         toDelete.forEach(obj => canvas.remove(obj));
@@ -195,7 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // ya que toJSON no guarda estilos de esquinas ni visibilidad de controles.
         canvas.getObjects().forEach(obj => {
             // Restaurar el flag si se perdió en la deserialización nativa de Fabric
-            if (obj.lockScalingX && obj.lockScalingY) {
+            if (isLogoObj(obj)) {
                 obj.isRequiredLogo = true;
             }
 
@@ -752,7 +762,7 @@ document.addEventListener('DOMContentLoaded', () => {
       let latestAngle = 0;
 
       // 1. Encontrar el logo actual para conservar su posición/rotación
-      const activeLogo = canvas.getObjects().find(o => o.isRequiredLogo || (o.lockScalingX && o.lockScalingY));
+      const activeLogo = canvas.getObjects().find(isLogoObj);
       if (activeLogo) {
           latestLeft = activeLogo.left;
           latestTop = activeLogo.top;
@@ -763,7 +773,7 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
           for (const v of Object.keys(canvasStates)) {
               if (canvasStates[v] && canvasStates[v].objects) {
-                  const stateLogo = canvasStates[v].objects.find(o => o.isRequiredLogo || (o.lockScalingX && o.lockScalingY));
+                  const stateLogo = canvasStates[v].objects.find(isLogoObj);
                   if (stateLogo) {
                       latestLeft = stateLogo.left;
                       latestTop = stateLogo.top;
@@ -777,14 +787,14 @@ document.addEventListener('DOMContentLoaded', () => {
       // 2. Eliminar el logo de todos los estados guardados
       Object.keys(canvasStates).forEach(v => {
           if (canvasStates[v] && canvasStates[v].objects) {
-              canvasStates[v].objects = canvasStates[v].objects.filter(o => !(o.isRequiredLogo || (o.lockScalingX && o.lockScalingY)));
+              canvasStates[v].objects = canvasStates[v].objects.filter(o => !isLogoObj(o));
           }
       });
 
       const img = await fabric.FabricImage.fromURL(logoUrl, { crossOrigin: 'anonymous' });
       const maxWidth = canvas.width * 0.75;
-      // 3/4 del ancho máximo permitido
-      const targetWidth = maxWidth * 0.75; 
+      // Ajustamos el tamaño a un 35% del máximo permitido para que no quede enorme
+      const targetWidth = maxWidth * 0.35; 
       const scale = targetWidth / (img.width || 1);
 
       img.set({
