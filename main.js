@@ -98,6 +98,11 @@ document.addEventListener('DOMContentLoaded', () => {
   function enforceRules(objects) {
     if (!objects) return;
     objects.forEach(obj => {
+      // Restaurar flag por si las dudas
+      if (obj.lockScalingX && obj.lockScalingY) {
+          obj.isRequiredLogo = true;
+      }
+
       if (obj.isRequiredLogo) {
         obj.setControlsVisibility({
           tl: false, tr: false, br: false, bl: false,
@@ -189,6 +194,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // Re-aplicar restricciones y estilos visuales a todos los objetos 
         // ya que toJSON no guarda estilos de esquinas ni visibilidad de controles.
         canvas.getObjects().forEach(obj => {
+            // Restaurar el flag si se perdió en la deserialización nativa de Fabric
+            if (obj.lockScalingX && obj.lockScalingY) {
+                obj.isRequiredLogo = true;
+            }
+
             // Estilos estéticos compartidos por todos
             obj.set({
                 cornerColor: '#6c5ce7',
@@ -722,14 +732,20 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // 7. Lógica del Logo Obligatorio
+  let isUpdatingLogo = false;
+
   async function updateMandatoryLogo(switchView = true) {
+    if (isUpdatingLogo) return;
+    
     const colorSelect = document.getElementById('mandatory-logo-color');
     const viewSelect = document.getElementById('mandatory-logo-view');
     if (!colorSelect || !viewSelect) return;
     
-    const color = colorSelect.value;
-    const targetView = viewSelect.value;
-    const logoUrl = color === 'black' ? '/logo_black.png' : '/logo_white.png';
+    isUpdatingLogo = true;
+    try {
+      const color = colorSelect.value;
+      const targetView = viewSelect.value;
+      const logoUrl = color === 'black' ? '/logo_black.png' : '/logo_white.png';
 
     let latestLeft = canvas.width / 2;
     let latestTop = canvas.height / 4;
@@ -812,6 +828,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } catch (err) {
       console.error("Error loading mandatory logo", err);
+    } finally {
+      isUpdatingLogo = false;
     }
   }
 
