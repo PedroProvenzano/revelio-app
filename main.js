@@ -793,8 +793,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const img = await fabric.FabricImage.fromURL(logoUrl, { crossOrigin: 'anonymous' });
       const maxWidth = canvas.width * 0.75;
-      // Ajustamos el tamaño a un 35% del máximo permitido para que no quede enorme
-      const targetWidth = maxWidth * 0.35; 
+      // El usuario solicitó explícitamente 3/4 (75%) del ancho máximo que puede tener una estampa
+      const targetWidth = maxWidth * 0.75; 
       const scale = targetWidth / (img.width || 1);
 
       img.set({
@@ -848,6 +848,14 @@ document.addEventListener('DOMContentLoaded', () => {
   if (logoViewSelect) logoViewSelect.addEventListener('change', () => updateMandatoryLogo(true));
 
   // Inicializar logo al cargar
-  setTimeout(() => updateMandatoryLogo(false), 500);
+  setTimeout(() => {
+      // Forzar recalculo de límites por si la carga de fuentes/CSS desfasó el layout inicial
+      const maskRect = document.querySelector('.canvas-container-mask').getBoundingClientRect();
+      if (maskRect.width > 0 && maskRect.height > 0) {
+          canvas.setDimensions({ width: maskRect.width, height: maskRect.height });
+          canvas.renderAll();
+      }
+      updateMandatoryLogo(false);
+  }, 500);
 
 });
