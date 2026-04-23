@@ -688,6 +688,8 @@ document.addEventListener('DOMContentLoaded', () => {
         latestLeft = activeLogo.left;
         latestTop = activeLogo.top;
         latestAngle = activeLogo.angle;
+        // CRÍTICO: Descartar el objeto activo antes de removerlo para no dejar "fantasmas"
+        canvas.discardActiveObject();
         canvas.remove(activeLogo);
     } else {
         for (const v of Object.keys(canvasStates)) {
@@ -713,7 +715,8 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const img = await fabric.FabricImage.fromURL(logoUrl, { crossOrigin: 'anonymous' });
       const maxWidth = canvas.width * 0.75;
-      const targetWidth = maxWidth * 0.75; // 3/4 del ancho máximo
+      // El usuario pidió un tamaño "chico". Usamos un 25% del ancho máximo permitido para diseños.
+      const targetWidth = maxWidth * 0.25; 
       const scale = targetWidth / (img.width || 1);
 
       img.set({
