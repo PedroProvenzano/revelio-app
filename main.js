@@ -2,6 +2,14 @@ import './style.css';
 import * as fabric from 'fabric';
 import html2canvas from 'html2canvas';
 
+// Configuración global de estilos para que NINGÚN objeto pierda su forma redonda ni color
+fabric.Object.prototype.set({
+  cornerColor: '#6c5ce7',
+  cornerStyle: 'circle',
+  borderColor: '#6c5ce7',
+  transparentCorners: false
+});
+
 document.addEventListener('DOMContentLoaded', () => {
   // 1. Inicialización del DOM y Variables
   const tshirtBase = document.getElementById('tshirt-base');
@@ -75,10 +83,37 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Mostrar controles de objeto al seleccionar
-  canvas.on('selection:created', showObjectControls);
-  canvas.on('selection:updated', showObjectControls);
+  // Mostrar controles de objeto al seleccionar y forzar reglas de UI
+  canvas.on('selection:created', (e) => {
+    showObjectControls();
+    enforceRules(e.selected);
+  });
+  canvas.on('selection:updated', (e) => {
+    showObjectControls();
+    enforceRules(e.selected);
+  });
   canvas.on('selection:cleared', hideObjectControls);
+
+  // Función anti-bugs para re-asegurar los controles cuando ganan foco
+  function enforceRules(objects) {
+    if (!objects) return;
+    objects.forEach(obj => {
+      if (obj.isRequiredLogo) {
+        obj.setControlsVisibility({
+          tl: false, tr: false, br: false, bl: false,
+          ml: false, mt: false, mr: false, mb: false,
+          mtr: true
+        });
+        obj.set({ lockScalingX: true, lockScalingY: true });
+      } else {
+        obj.setControlsVisibility({
+          mt: false, mb: false, ml: false, mr: false
+        });
+        obj.set({ lockUniScaling: true });
+      }
+    });
+    canvas.requestRenderAll();
+  }
 
   // Limitar el tamaño de escalado de los objetos
   canvas.on('object:scaling', function(e) {
