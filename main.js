@@ -747,41 +747,40 @@ document.addEventListener('DOMContentLoaded', () => {
       const targetView = viewSelect.value;
       const logoUrl = color === 'black' ? '/logo_black.png' : '/logo_white.png';
 
-    let latestLeft = canvas.width / 2;
-    let latestTop = canvas.height / 4;
-    let latestAngle = 0;
+      let latestLeft = canvas.width / 2;
+      let latestTop = canvas.height / 4;
+      let latestAngle = 0;
 
-    // 1. Encontrar el logo actual para conservar su posición/rotación
-    const activeLogo = canvas.getObjects().find(o => o.isRequiredLogo);
-    if (activeLogo) {
-        latestLeft = activeLogo.left;
-        latestTop = activeLogo.top;
-        latestAngle = activeLogo.angle;
-        // CRÍTICO: Descartar el objeto activo antes de removerlo para no dejar "fantasmas"
-        canvas.discardActiveObject();
-        canvas.remove(activeLogo);
-    } else {
-        for (const v of Object.keys(canvasStates)) {
-            if (canvasStates[v] && canvasStates[v].objects) {
-                const stateLogo = canvasStates[v].objects.find(o => o.isRequiredLogo);
-                if (stateLogo) {
-                    latestLeft = stateLogo.left;
-                    latestTop = stateLogo.top;
-                    latestAngle = stateLogo.angle;
-                    break;
-                }
-            }
-        }
-    }
+      // 1. Encontrar el logo actual para conservar su posición/rotación
+      const activeLogo = canvas.getObjects().find(o => o.isRequiredLogo);
+      if (activeLogo) {
+          latestLeft = activeLogo.left;
+          latestTop = activeLogo.top;
+          latestAngle = activeLogo.angle;
+          // CRÍTICO: Descartar el objeto activo antes de removerlo para no dejar "fantasmas"
+          canvas.discardActiveObject();
+          canvas.remove(activeLogo);
+      } else {
+          for (const v of Object.keys(canvasStates)) {
+              if (canvasStates[v] && canvasStates[v].objects) {
+                  const stateLogo = canvasStates[v].objects.find(o => o.isRequiredLogo);
+                  if (stateLogo) {
+                      latestLeft = stateLogo.left;
+                      latestTop = stateLogo.top;
+                      latestAngle = stateLogo.angle;
+                      break;
+                  }
+              }
+          }
+      }
 
-    // 2. Eliminar el logo de todos los estados guardados
-    Object.keys(canvasStates).forEach(v => {
-        if (canvasStates[v] && canvasStates[v].objects) {
-            canvasStates[v].objects = canvasStates[v].objects.filter(o => !o.isRequiredLogo);
-        }
-    });
+      // 2. Eliminar el logo de todos los estados guardados
+      Object.keys(canvasStates).forEach(v => {
+          if (canvasStates[v] && canvasStates[v].objects) {
+              canvasStates[v].objects = canvasStates[v].objects.filter(o => !o.isRequiredLogo);
+          }
+      });
 
-    try {
       const img = await fabric.FabricImage.fromURL(logoUrl, { crossOrigin: 'anonymous' });
       const maxWidth = canvas.width * 0.75;
       // 3/4 del ancho máximo permitido
